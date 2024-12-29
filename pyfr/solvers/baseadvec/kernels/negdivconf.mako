@@ -32,5 +32,4 @@ tdivtconf[2] += ${omg**2}*u[0]*ploc[1] - ${2*omg}*u[1];
 tdivtconf[${nvars-1}] += ${2*(mu*gamma/Pr)*omg**2};
 % endif
 % endif
-printf("tdivtconf[1]: %f, tdivtconf[2]: %f\n", tdivtconf[1], tdivtconf[2]);
 </%pyfr:kernel>
