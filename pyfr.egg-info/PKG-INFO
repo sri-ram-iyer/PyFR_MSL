@@ -1,0 +1,34 @@
+Metadata-Version: 2.1
+Name: pyfr
+Version: 2.0.3
+Summary: Flux Reconstruction in Python
+Home-page: http://www.pyfr.org/
+Author: Imperial College London
+Author-email: info@pyfr.org
+License: BSD
+Keywords: Math
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.10
+License-File: LICENSE
+License-File: AUTHORS
+Requires-Dist: gimmik>=3.2.1
+Requires-Dist: h5py>=2.10
+Requires-Dist: mako>=1.0.0
+Requires-Dist: mpi4py>=3.1.0
+Requires-Dist: numpy>=1.26.4
+Requires-Dist: platformdirs>=2.2.0
+Requires-Dist: pytools>=2016.2.1
+Requires-Dist: rtree>=1.0.1
+Provides-Extra: metal
+Requires-Dist: pyobjc-framework-Metal>=9.0; extra == "metal"
+
+PyFR is an open-source Python based framework for
+solving advection-diffusion type problems on streaming architectures
+using the Flux Reconstruction approach of Huynh. The framework is
+designed to solve a range of governing systems on mixed unstructured
+grids containing various element types. It is also designed to target a
+range of hardware platforms via use of an in-built domain specific
+language derived from the Mako templating engine.
