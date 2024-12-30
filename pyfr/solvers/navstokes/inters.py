@@ -108,7 +108,14 @@ class NavierStokesBaseBCInters(TplargsMixin, BaseAdvectionDiffusionBCInters):
         # Additional BC specific template arguments
         self._tplargs['bctype'] = self.type
         self._tplargs['bccfluxstate'] = self.cflux_state
-        self._tplargs['omg'] = self.cfg.getfloat('constants', 'omg')
+
+        import csv
+        csv_path = '/share/data2/sriram/Dynamics.csv'        
+        with open(csv_path, mode='r') as file:
+            reader = csv.reader(file)
+            data = list(reader)
+            omg = float(data[-1][2])
+        self._tplargs['omg'] = omg
 
         self._be.pointwise.register('pyfr.solvers.navstokes.kernels.bcconu')
         self._be.pointwise.register('pyfr.solvers.navstokes.kernels.bccflux')

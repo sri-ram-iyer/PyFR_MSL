@@ -39,16 +39,14 @@ class BaseElements:
 
         
         import csv
+        import os
         file_name = "Dynamics.csv"
         alpha = self.cfg.getfloat('constants', 'alpha')
         omg = self.cfg.getfloat('constants', 'omg')
         omg_dot = self.cfg.getfloat('constants', 'omg_dot')
-        print(alpha)
-        print(omg)
-        print(omg_dot)
         data = [
-            ["Alpha", "Omega", "Omega Dot"],
-            [alpha, omg, omg_dot]
+            ["Time", "Alpha", "Omega", "Omega Dot"],
+            [0.0, alpha, omg, omg_dot]
         ]
         with open(file_name, mode='w', newline='') as file:
             writer = csv.writer(file)
@@ -149,7 +147,13 @@ class BaseElements:
     @cached_property
     def rotefpts(self):
         ploc = self.plocfpts
-        omg = self.cfg.getfloat('constants', 'omg')
+
+        import csv
+        csv_path = '/share/data2/sriram/Dynamics.csv'        
+        with open(csv_path, mode='r') as file:
+            reader = csv.reader(file)
+            data = list(reader)
+            omg = float(data[-1][2])
 
         return self.rote_from_ploc(ploc, omg)
 
@@ -349,7 +353,14 @@ class BaseElements:
     @memoize
     def rote_at_np(self, name):
         ploc = self.ploc_at_np(name).swapaxes(1,2)
-        omg = self.cfg.getfloat('constants', 'omg')
+        
+        import csv
+        csv_path = '/share/data2/sriram/Dynamics.csv'        
+        with open(csv_path, mode='r') as file:
+            reader = csv.reader(file)
+            data = list(reader)
+            omg = float(data[-1][2])
+        
         return self.rote_from_ploc(ploc, omg)
 
     @sliceat

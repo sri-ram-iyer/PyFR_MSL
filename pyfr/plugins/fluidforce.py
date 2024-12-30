@@ -231,7 +231,25 @@ class FluidForcePlugin(SurfaceMixin, BaseSolnPlugin):
             print(intg.tcurr, *fm.ravel(), sep=',', file=self.outf)
 
             # Flush to disk
-            self.outf.flush()
+            self.outf.flush
+            
+            # Calculate Alpha, Omega, Omega_Dot
+            import csv
+            csv_path = '/share/data2/sriram/Dynamics.csv'        
+            with open(csv_path, mode='r') as file:
+                reader = csv.reader(file)
+                data = list(reader)
+                alpha = float(data[-1][1])
+                omg = float(data[-1][2])
+                omg_dot = float(data[-1][3])
+            omg = omg + 1
+
+            data = [
+                [intg.tcurr, alpha, omg, omg_dot]
+            ]
+            with open(csv_path, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerows(data)
 
     def stress_tensor(self, u, du):
         c = self._constants
