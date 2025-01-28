@@ -18,9 +18,6 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
 
         comm, rank, root = get_comm_rank_root()
 
-        # Output frequency
-        self.nsteps = self.cfg.getint(cfgsect, 'nsteps')
-
         # Check if we need to compute viscous force
         self._viscous = 'navier-stokes' in intg.system.name
 
@@ -40,10 +37,12 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         bc = f'bcon_{suffix}_p{intg.rallocs.prank}'
 
         # Dynamics Variables
+        self.fluidforce_steps = self.cfg.getint(cfgsect, 'fluidforce_steps')
+        self.output_steps = self.cfg.getint(cfgsect, 'output_steps')
         self.scheme = self.cfg.get(cfgsect, 'scheme')
         self.dt = self.cfg.getfloat('solver-time-integrator', 'dt')
         self.solversystem = self.cfg.get('solver', 'system')
-        self.inertia = self.cfg.getfloat(cfgsect, 'I')
+        self.I_yy = self.cfg.getfloat(cfgsect, 'Iyy')
         self.freestream_u = self.cfg.getfloat(cfgsect, 'freestream_u')
         self.freestream_v = self.cfg.getfloat(cfgsect, 'freestream_v')
         self.freestream = np.sqrt(self.freestream_u ** 2 + self.freestream_v ** 2)
@@ -149,7 +148,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         # MPI info
         comm, rank, root = get_comm_rank_root()
         
-        if intg.nacptsteps % self.nsteps == 0:
+        if intg.nacptsteps % self.fluidforce_steps == 0:
 
             # Solution matrices indexed by element type
             solns = dict(zip(intg.system.ele_types, intg.soln))
@@ -245,7 +244,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             self.vy = fm_omg_dot[1, 1]
             self.mvz = fm_omg_dot[1, 2]
             self.mz = self.mpz + self.mvz
-            self.omega_dot_rad = -self.mz / self.inertia
+            self.omega_dot_rad = -self.mz / self.I_yy
             self.omega_dot_deg = self.omega_dot_rad * (180 / np.pi)
 
         if self.scheme == 'euler':
@@ -280,12 +279,13 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         # self.neg_omega = -self.omega_rad
 
         # Reduce and output if we're the root rank
-        if rank == root:
-            # Write
-            print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.alpha_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
+        if intg.nacptsteps % self.output_steps == 0:
+            if rank == root:
+                # Write
+                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.alpha_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
 
-            # Flush to disk
-            self.outf.flush()
+                # Flush to disk
+                self.outf.flush()
 
         # Broadcast to solver
         if rank == root:
