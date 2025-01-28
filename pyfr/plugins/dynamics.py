@@ -44,12 +44,12 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.dt = self.cfg.getfloat('solver-time-integrator', 'dt')
         self.solversystem = self.cfg.get('solver', 'system')
         self.inertia = self.cfg.getfloat(cfgsect, 'I')
-        self.freestream = self.cfg.getfloat(cfgsect, 'freestream')
-        self.alpha = self.cfg.getfloat(cfgsect, 'alpha_ini')
-        alpha_rad = np.radians(self.alpha)
-        self.u = self.freestream * np.cos(alpha_rad)
-        self.v = self.freestream * np.sin(alpha_rad)
-        self.omega = self._constants.get('omg')
+        self.freestream_u = self.cfg.getfloat(cfgsect, 'freestream_u')
+        self.freestream_v = self.cfg.getfloat(cfgsect, 'freestream_v')
+        self.freestream = np.sqrt(self.freestream_u ** 2 + self.freestream_v ** 2)
+        self.alpha_deg = np.degrees(np.arctan2(self.freestream_v, self.freestream_u))
+        self.omega_rad = self._constants.get('omg')
+        self.omega_deg = self.omega_rad * (180 / np.pi)
         self.prev_omega_dot = 0.0
         self.prev_omega = 0.0
 
@@ -245,43 +245,61 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             self.vy = fm_omg_dot[1, 1]
             self.mvz = fm_omg_dot[1, 2]
             self.mz = self.mpz + self.mvz
-            self.omega_dot = self.mz / self.inertia
+            self.omega_dot_rad = -self.mz / self.inertia
+            self.omega_dot_deg = self.omega_dot_rad * (180 / np.pi)
 
         if self.scheme == 'euler':
             # Euler Method
-            self.omega_next = self.omega + self.omega_dot * self.dt
-            self.alpha_next = self.alpha + self.omega * self.dt
-            self.omega = self.omega_next
-            self.alpha = self.alpha_next
+            self.omega_next = self.omega_deg + self.omega_dot_deg * self.dt
+            self.alpha_next = self.alpha_deg + self.omega_deg * self.dt
+            self.omega_deg = self.omega_next
+            self.alpha_deg = self.alpha_next
         elif self.scheme == 'heun':
             # Trapezoidal Method
-            self.omega_next = self.omega + (self.dt / 2) * (self.omega_dot + self.prev_omega_dot)
-            self.alpha_next = self.alpha + (self.dt / 2) * (self.omega + self.prev_omega)
-            self.prev_omega_dot = self.omega_dot
-            self.prev_omega = self.omega
-            self.omega = self.omega_next
-            self.alpha = self.alpha_next
+            self.omega_next = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
+            self.alpha_next = self.alpha_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
+            self.prev_omega_dot = self.omega_dot_deg
+            self.prev_omega = self.omega_deg
+            self.omega_deg = self.omega_next
+            self.alpha_deg = self.alpha_next
         elif self.scheme == 'adams-bashforth':
             # Adams-Bashforth 2nd-order
-            self.omega_next = self.omega + (3 * self.omega_dot - self.prev_omega_dot) * self.dt / 2
-            self.alpha_next = self.alpha + (3 * self.omega - self.prev_omega) * self.dt / 2
-            self.prev_omega_dot = self.omega_dot
-            self.prev_omega = self.omega
-            self.omega = self.omega_next
-            self.alpha = self.alpha_next
+            self.omega_next = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
+            self.alpha_next = self.alpha_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
+            self.prev_omega_dot = self.omega_dot_deg
+            self.prev_omega = self.omega_deg
+            self.omega_deg = self.omega_next
+            self.alpha_deg = self.alpha_next
 
-        # Calculate velocities
-        alpha_rad = np.radians(self.alpha)
-        self.u = self.freestream * np.cos(alpha_rad)
-        self.v = self.freestream * np.sin(alpha_rad) 
+        # Calculate velocities and omega_sqr
+        self.u = self.freestream * np.cos(np.radians(self.alpha_deg))
+        self.v = self.freestream * np.sin(np.radians(self.alpha_deg))
+        self.du = self.u - self.freestream_u
+        self.dv = self.v - self.freestream_v
+        # self.omg_sqr = self.omega ** 2
+        # self.neg_omega = -self.omega_rad
 
         # Reduce and output if we're the root rank
         if rank == root:
             # Write
-            print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.alpha, self.omega, self.omega_dot, sep=',', file=self.outf)
+            print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.alpha_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
 
             # Flush to disk
             self.outf.flush()
+
+        # Broadcast to solver
+        if rank == root:
+            intg.system.u = float(comm.bcast(self.du, root=root))
+            intg.system.v = float(comm.bcast(self.dv, root=root))
+            # intg.system.omg_sqr = float(comm.bcast(self.omg_sqr, root=root))
+            # intg.system.neg_omg = float(comm.bcast(self.neg_omega, root=root))
+            # intg.system.omega_dot = float(comm.bcast(self.omega_dot, root=root))
+        else:
+            intg.system.u = float(comm.bcast(None, root=root))
+            intg.system.v = float(comm.bcast(None, root=root))
+            # intg.system.omg_sqr = float(comm.bcast(None, root=root))
+            # intg.system.neg_omg = float(comm.bcast(None, root=root))
+            # intg.system.omega_dot = float(comm.bcast(None, root=root))
 
     def stress_tensor(self, u, du):
         c = self._constants

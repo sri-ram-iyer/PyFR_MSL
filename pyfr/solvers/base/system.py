@@ -286,11 +286,13 @@ class BaseSystem:
     def _prepare_kernels(self, t, uinbank, foutbank):
         _, binders = self._get_kernels(uinbank, foutbank)
 
+        u = getattr(self, 'u', 0)
+        v = getattr(self, 'v', 0)
         for b in self._bc_inters:
-            b.prepare(t)
+            b.prepare(t, u=u, v=v)
 
         for b in binders:
-            b(t=t)
+            b(t=t, u=u, v=v)
 
     def _rhs_graphs(self, uinbank, foutbank):
         pass

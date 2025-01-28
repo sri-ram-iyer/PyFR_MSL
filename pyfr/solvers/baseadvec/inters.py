@@ -128,6 +128,8 @@ class BaseAdvectionBCInters(BaseInters):
 
         # Make velocity offset available inside kernels
         self._rote_lhs = self._const_mat(lhs, 'get_rote_for_inter')
+        self._set_external('u', 'scalar fpdtype_t')
+        self._set_external('v', 'scalar fpdtype_t')
 
         if cfg.get('solver', 'shock-capturing') == 'entropy-filter':
             self._entmin_lhs = self._view(lhs, 'get_entmin_bc_fpts_for_inter')
