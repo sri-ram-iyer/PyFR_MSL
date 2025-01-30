@@ -44,8 +44,7 @@ class BaseFluidElements:
 
         # Compute the pressure
         gamma = cfg.getfloat('constants', 'gamma')
-        omg = cfg.getfloat('constants', 'omg')
-        rote = BaseElements.rote_from_ploc(ploc, omg)
+        rote = BaseElements.rote_from_ploc(ploc)
         if np.shape(cons)[1] == 1:
             rote = np.mean(rote, axis=0)
         p = (gamma - 1)*(E - 0.5*rho*sum(v*v for v in vs) + rho*rote)

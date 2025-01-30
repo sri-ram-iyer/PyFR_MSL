@@ -3,7 +3,7 @@
 <% gmo = c['gamma'] - 1.0 %>
 <% gamma = c['gamma'] %>
 
-<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v'>
+<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v, omg_sqr'>
     fpdtype_t u_val = u;
     fpdtype_t v_val = v;
     fpdtype_t cs = sqrt(${gamma}*${c['p']}/${c['rho']});
@@ -17,7 +17,7 @@
                                       for i in range(ndims))});
     fpdtype_t p_i = ${gmo}*ul[${nvars - 1}]
                   - ${0.5*gmo}*inv*${pyfr.dot('ul[{i}]', i=(1, ndims + 1))}
-                  + ${gmo}*ul[0]*rote;
+                  + ${gmo}*ul[0]*rote*omg_sqr;
     fpdtype_t c_i = sqrt(${gamma}*p_i*inv);
     fpdtype_t R_e = (fabs(V_e) >= cs && V_i >= 0)
                   ? V_i - c_i*${2.0/gmo}
@@ -40,5 +40,5 @@
 % endfor
     ur[${nvars - 1}] = p_b*${1.0/gmo}
                      + 0.5*(1.0/ur[0])*${pyfr.dot('ur[{i}]', i=(1, ndims + 1))}
-                     - ur[0]*rote;
+                     - ur[0]*rote*omg_sqr;
 </%pyfr:macro>

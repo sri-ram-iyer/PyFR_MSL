@@ -288,11 +288,14 @@ class BaseSystem:
 
         u = getattr(self, 'u', 0)
         v = getattr(self, 'v', 0)
+        omg_sqr = getattr(self, 'omg_sqr', 0)
+        neg_omg = getattr(self, 'neg_omg', 0)
+        omega_dot = getattr(self, 'omega_dot', 0)
         for b in self._bc_inters:
-            b.prepare(t, u=u, v=v)
+            b.prepare(t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot)
 
         for b in binders:
-            b(t=t, u=u, v=v)
+            b(t=t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot)
 
     def _rhs_graphs(self, uinbank, foutbank):
         pass

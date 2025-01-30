@@ -26,8 +26,8 @@ fpdtype_t src[${nvars}] = {};
 // E_s    = -(mu*gamma/Pr)*(rote_xx + rote_yy) (assumes mu variation is negligible)
 //        = -(mu*gamma/Pr)*(2*omg**2)
 % if omg:
-tdivtconf[1] += ${omg**2}*u[0]*ploc[0] + ${2*omg}*u[2];
-tdivtconf[2] += ${omg**2}*u[0]*ploc[1] - ${2*omg}*u[1];
+tdivtconf[1] += ${omg**2}*u[0]*ploc[0] + ${2*omg}*u[2] + u[0]*${omega_dot}*ploc[1];
+tdivtconf[2] += ${omg**2}*u[0]*ploc[1] - ${2*omg}*u[1] - u[0]*${omega_dot}*ploc[0];
 % if mu:
 tdivtconf[${nvars-1}] += ${2*(mu*gamma/Pr)*omg**2};
 % endif

@@ -131,9 +131,8 @@ class BaseElements:
     @cached_property
     def rotefpts(self):
         ploc = self.plocfpts
-        omg = self.cfg.getfloat('constants', 'omg')
 
-        return self.rote_from_ploc(ploc, omg)
+        return self.rote_from_ploc(ploc)
 
     @cached_property
     def _scal_upts_cpy(self):
@@ -320,19 +319,18 @@ class BaseElements:
         return self._be.const_matrix(self.ploc_at_np(name), tags={'align'})
 
     @staticmethod
-    def rote_from_ploc(ploc, omg):
+    def rote_from_ploc(ploc):
         x = ploc[..., 0]
         y = ploc[..., 1]
 
-        rote = 0.5*(omg**2)*(x**2 + y**2)
+        rote = 0.5*(x**2 + y**2)
 
         return rote
 
     @memoize
     def rote_at_np(self, name):
         ploc = self.ploc_at_np(name).swapaxes(1,2)
-        omg = self.cfg.getfloat('constants', 'omg')
-        return self.rote_from_ploc(ploc, omg)
+        return self.rote_from_ploc(ploc)
 
     @sliceat
     @memoize

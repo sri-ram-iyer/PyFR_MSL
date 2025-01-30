@@ -16,7 +16,7 @@ class BaseAdvectionElements(BaseElements):
             'ndims': self.ndims,
             'nvars': self.nvars,
             'src_macros': [],
-            'omg': self.cfg.getfloat('constants', 'omg'),
+            'omg': self.cfg.getfloat('constants', 'omg', 0.0),
             'mu': self.cfg.getfloat('constants', 'mu', 0.0),
             'gamma': self.cfg.getfloat('constants', 'gamma', 0.0),
             'Pr': self.cfg.getfloat('constants', 'Pr', 0.0)

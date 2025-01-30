@@ -47,7 +47,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.freestream_v = self.cfg.getfloat(cfgsect, 'freestream_v')
         self.freestream = np.sqrt(self.freestream_u ** 2 + self.freestream_v ** 2)
         self.alpha_deg = np.degrees(np.arctan2(self.freestream_v, self.freestream_u))
-        self.omega_rad = self._constants.get('omg')
+        self.omega_rad = self.cfg.getfloat(cfgsect, 'omega_initial')
         self.omega_deg = self.omega_rad * (180 / np.pi)
         self.prev_omega_dot = 0.0
         self.prev_omega = 0.0
@@ -275,8 +275,9 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.v = self.freestream * np.sin(np.radians(self.alpha_deg))
         self.du = self.u - self.freestream_u
         self.dv = self.v - self.freestream_v
-        # self.omg_sqr = self.omega ** 2
-        # self.neg_omega = -self.omega_rad
+        self.omega_rad = self.omega_deg * (np.pi / 180)
+        self.omg_sqr_rad = self.omega_rad ** 2
+        self.neg_omega_rad = -self.omega_rad
 
         # Reduce and output if we're the root rank
         if intg.nacptsteps % self.output_steps == 0:
@@ -291,15 +292,15 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         if rank == root:
             intg.system.u = float(comm.bcast(self.du, root=root))
             intg.system.v = float(comm.bcast(self.dv, root=root))
-            # intg.system.omg_sqr = float(comm.bcast(self.omg_sqr, root=root))
-            # intg.system.neg_omg = float(comm.bcast(self.neg_omega, root=root))
-            # intg.system.omega_dot = float(comm.bcast(self.omega_dot, root=root))
+            intg.system.omg_sqr = float(comm.bcast(self.omg_sqr_rad, root=root))
+            intg.system.neg_omg = float(comm.bcast(self.neg_omega_rad, root=root))
+            intg.system.omega_dot = float(comm.bcast(self.omega_dot_rad, root=root))
         else:
             intg.system.u = float(comm.bcast(None, root=root))
             intg.system.v = float(comm.bcast(None, root=root))
-            # intg.system.omg_sqr = float(comm.bcast(None, root=root))
-            # intg.system.neg_omg = float(comm.bcast(None, root=root))
-            # intg.system.omega_dot = float(comm.bcast(None, root=root))
+            intg.system.omg_sqr = float(comm.bcast(None, root=root))
+            intg.system.neg_omg = float(comm.bcast(None, root=root))
+            intg.system.omega_dot = float(comm.bcast(None, root=root))
 
     def stress_tensor(self, u, du):
         c = self._constants

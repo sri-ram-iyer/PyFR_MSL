@@ -40,11 +40,17 @@ class BaseInters:
         self._external_args = {}
         self._external_vals = {}
 
-    def prepare(self, t, u=None, v=None):
+    def prepare(self, t, u=None, v=None, omg_sqr=None, neg_omg=None, omega_dot=None):
         if u is not None:
             self._set_external('u', 'scalar fpdtype_t', u)
         if v is not None:
             self._set_external('v', 'scalar fpdtype_t', v)
+        if omg_sqr is not None:
+            self._set_external('omg_sqr', 'scalar fpdtype_t', omg_sqr)
+        if neg_omg is not None:
+            self._set_external('neg_omg', 'scalar fpdtype_t', neg_omg)
+        if omega_dot is not None:
+            self._set_external('omega_dot', 'scalar fpdtype_t', omega_dot)
 
     def _set_external(self, name, spec, value=None):
         self._external_args[name] = spec
