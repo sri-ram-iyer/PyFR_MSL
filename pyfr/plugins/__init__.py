@@ -14,6 +14,7 @@ from pyfr.plugins.tavg import TavgCLIPlugin, TavgPlugin
 from pyfr.plugins.turbulence import TurbulencePlugin
 from pyfr.plugins.writer import WriterPlugin
 from pyfr.plugins.dynamics import DynamicsPlugin
+from pyfr.plugins.nanvtuwriter import NaNVTUWriterPlugin
 from pyfr.util import subclass_where
 
 

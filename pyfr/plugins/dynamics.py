@@ -51,6 +51,8 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.omega_deg = self.omega_rad * (180 / np.pi)
         self.prev_omega_dot = 0.0
         self.prev_omega = 0.0
+        self.omega_dot_rad = 0.0
+        self.omega_dot_deg = 0.0
 
         # Moments
         mcomp = 3 if self.ndims == 3 else 1
