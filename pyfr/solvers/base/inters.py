@@ -39,6 +39,10 @@ class BaseInters:
         # Global kernel arguments
         self._external_args = {}
         self._external_vals = {}
+        self._set_external('t', 'scalar fpdtype_t')
+        self._set_external('omg_sqr', 'scalar fpdtype_t')
+        self._set_external('neg_omg', 'scalar fpdtype_t')
+        self._set_external('omega_dot', 'scalar fpdtype_t')
 
     def prepare(self, t, u=None, v=None, omg_sqr=None, neg_omg=None, omega_dot=None):
         if u is not None:

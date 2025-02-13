@@ -144,14 +144,14 @@ class BaseFluidElements:
 
             # Compute local entropy bounds
             self.kernels['local_entropy'] = lambda uin: self._be.kernel(
-                'entropylocal', tplargs=eftplargs, dims=[self.neles],
+                'entropylocal', tplargs=eftplargs, dims=[self.neles], extrns=self._external_args,
                 u=self.scal_upts[uin], entmin_int=self.entmin_int, m0=self.m0,
                 rote=self.rote_at('upts'), rotef=self.rote_at('fpts')
             )
 
             # Apply entropy filter
             self.kernels['entropy_filter'] = lambda uin: self._be.kernel(
-                'entropyfilter', tplargs=eftplargs, dims=[self.neles],
+                'entropyfilter', tplargs=eftplargs, dims=[self.neles], extrns=self._external_args,
                 u=self.scal_upts[uin], entmin_int=self.entmin_int,
                 vdm=self.vdm_ef, invvdm=self.invvdm, m0=self.m0,
                 rote=self.rote_at('upts'), rotef=self.rote_at('fpts')
@@ -187,14 +187,14 @@ class EulerElements(BaseFluidElements, BaseAdvectionElements):
         if c in r and 'flux' not in self.antialias:
             tdisf.append(lambda uin: self._be.kernel(
                 'tflux', tplargs=tplargs | {'ktype': 'curved'},
-                dims=[self.nupts, r[c]], u=s(self.scal_upts[uin], c),
+                dims=[self.nupts, r[c]], u=s(self.scal_upts[uin], c), extrns=self._external_args,
                 f=s(self._vect_upts, c), smats=self.curved_smat_at('upts'),
                 rote=self.rote_at('upts', c)
             ))
         elif c in r:
             tdisf.append(lambda: self._be.kernel(
                 'tflux', tplargs=tplargs | {'ktype': 'curved'},
-                dims=[self.nqpts, r[c]], u=s(self._scal_qpts, c),
+                dims=[self.nqpts, r[c]], u=s(self._scal_qpts, c), extrns=self._external_args,
                 f=s(self._vect_qpts, c), smats=self.curved_smat_at('qpts'),
                 rote=self.rote_at('qpts', c)
             ))
@@ -202,14 +202,14 @@ class EulerElements(BaseFluidElements, BaseAdvectionElements):
         if l in r and 'flux' not in self.antialias:
             tdisf.append(lambda uin: self._be.kernel(
                 'tflux', tplargs=tplargs | {'ktype': 'linear'},
-                dims=[self.nupts, r[l]], u=s(self.scal_upts[uin], l),
+                dims=[self.nupts, r[l]], u=s(self.scal_upts[uin], l), extrns=self._external_args,
                 f=s(self._vect_upts, l), verts=self.ploc_at('linspts', l),
                 upts=self.upts, rote=self.rote_at('upts', l)
             ))
         elif l in r:
             tdisf.append(lambda: self._be.kernel(
                 'tflux', tplargs=tplargs | {'ktype': 'linear'},
-                dims=[self.nqpts, r[l]], u=s(self._scal_qpts, l),
+                dims=[self.nqpts, r[l]], u=s(self._scal_qpts, l), extrns=self._external_args,
                 f=s(self._vect_qpts, l), verts=self.ploc_at('linspts', l),
                 upts=self.qpts, rote=self.rote_at('qpts', l)
             ))

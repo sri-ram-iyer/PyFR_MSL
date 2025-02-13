@@ -11,7 +11,7 @@ class FluidIntIntersMixin:
             self._be.pointwise.register('pyfr.solvers.euler.kernels.intcent')
 
             self.kernels['comm_entropy'] = lambda: self._be.kernel(
-                'intcent', tplargs={}, dims=[self.ninters],
+                'intcent', tplargs={}, dims=[self.ninters], extrns=self._external_args,
                 entmin_lhs=self._entmin_lhs, entmin_rhs=self._entmin_rhs
             )
 
@@ -40,7 +40,7 @@ class FluidMPIIntersMixin:
             self._be.pointwise.register('pyfr.solvers.euler.kernels.mpicent')
 
             self.kernels['comm_entropy'] = lambda: self._be.kernel(
-                'mpicent', tplargs={}, dims=[self.ninters],
+                'mpicent', tplargs={}, dims=[self.ninters], extrns=self._external_args,
                 entmin_lhs=self._entmin_lhs, entmin_rhs=self._entmin_rhs
             )
 
@@ -53,7 +53,7 @@ class EulerIntInters(TplargsMixin, FluidIntIntersMixin,
         self._be.pointwise.register('pyfr.solvers.euler.kernels.intcflux')
 
         self.kernels['comm_flux'] = lambda: self._be.kernel(
-            'intcflux', tplargs=self._tplargs, dims=[self.ninterfpts],
+            'intcflux', tplargs=self._tplargs, dims=[self.ninterfpts], extrns=self._external_args,
             ul=self._scal_lhs, ur=self._scal_rhs, nl=self._pnorm_lhs,
             rote=self._rote_lhs
         )
@@ -67,7 +67,7 @@ class EulerPintInters(TplargsMixin, FluidIntIntersMixin,
         self._be.pointwise.register('pyfr.solvers.euler.kernels.pintcflux')
 
         self.kernels['comm_flux'] = lambda: self._be.kernel(
-            'pintcflux', tplargs=self._tplargs, dims=[self.ninterfpts],
+            'pintcflux', tplargs=self._tplargs, dims=[self.ninterfpts], extrns=self._external_args,
             ul=self._scal_lhs, ur=self._scal_rhs, nl=self._pnorm_lhs,
             nr=self._pnorm_rhs, rote=self._rote_lhs
         )
@@ -81,7 +81,7 @@ class EulerMPIInters(TplargsMixin, FluidMPIIntersMixin,
         self._be.pointwise.register('pyfr.solvers.euler.kernels.mpicflux')
 
         self.kernels['comm_flux'] = lambda: self._be.kernel(
-            'mpicflux', self._tplargs, dims=[self.ninterfpts],
+            'mpicflux', self._tplargs, dims=[self.ninterfpts], extrns=self._external_args,
             ul=self._scal_lhs, ur=self._scal_rhs, nl=self._pnorm_lhs,
             rote=self._rote_lhs
         )

@@ -7,10 +7,6 @@ class BaseAdvectionElements(BaseElements):
     def __init__(self, *kargs, **kwargs):
         super().__init__(*kargs, **kwargs)
 
-        # Global kernel arguments
-        self._external_args = {}
-        self._external_vals = {}
-
         # Source term kernel arguments
         self._srctplargs = {
             'ndims': self.ndims,
@@ -50,12 +46,6 @@ class BaseAdvectionElements(BaseElements):
 
         self._srctplargs['src_macros'].append((mod, name))
         self._srctplargs |= tplargs
-
-    def _set_external(self, name, spec, value=None):
-        self._external_args[name] = spec
-
-        if value is not None:
-            self._external_vals[name] = value
 
     def set_backend(self, backend, nscalupts, nonce, linoff):
         super().set_backend(backend, nscalupts, nonce, linoff)
