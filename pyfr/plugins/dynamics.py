@@ -40,17 +40,24 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.fluidforce_steps = self.cfg.getint(cfgsect, 'fluidforce_steps')
         self.output_steps = self.cfg.getint(cfgsect, 'output_steps')
         self.scheme = self.cfg.get(cfgsect, 'scheme')
+        self.dof = self.cfg.getint(cfgsect, 'DoF')
         self.dt = self.cfg.getfloat('solver-time-integrator', 'dt')
         self.solversystem = self.cfg.get('solver', 'system')
         self.I_yy = self.cfg.getfloat(cfgsect, 'Iyy')
-        self.freestream_u = self.cfg.getfloat(cfgsect, 'freestream_u')
-        self.freestream_v = self.cfg.getfloat(cfgsect, 'freestream_v')
-        self.freestream = np.sqrt(self.freestream_u ** 2 + self.freestream_v ** 2)
-        self.alpha_deg = np.degrees(np.arctan2(self.freestream_v, self.freestream_u))
+        self.mass = self.cfg.getfloat(cfgsect, 'm')
+        self.rotating_U = self.cfg.getfloat(cfgsect, 'rotating_U')
+        self.rotating_V = self.cfg.getfloat(cfgsect, 'rotating_V')
+        self.rotating_freestream = np.sqrt(self.rotating_U ** 2 + self.rotating_V ** 2)
+        self.theta_deg = np.degrees(np.arctan2(self.rotating_V, self.rotating_U))
         self.omega_rad = self.cfg.getfloat(cfgsect, 'omega_initial')
+        self.global_U = self.rotating_freestream
+        self.global_V = 0.0
+        self.global_Velocity = self.rotating_freestream
         self.omega_deg = self.omega_rad * (180 / np.pi)
         self.prev_omega_dot = 0.0
         self.prev_omega = 0.0
+        self.prev_U_dot = 0.0
+        self.prev_V_dot = 0.0
         self.omega_dot_rad = 0.0
         self.omega_dot_deg = 0.0
 
@@ -81,7 +88,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
                 header += ['vx', 'vy', 'vz'][:self.ndims]
                 if self._mcomp:
                     header += ['mvx', 'mvy', 'mvz'][3 - mcomp:]
-            header += ['u', 'v', 'alpha', 'omega', 'omega_dot']
+            header += ['u', 'v', 'global_U', 'global_V', 'global_U_dot', 'global_V_dot', 'alpha', 'gamma', 'theta', 'omega', 'omega_dot']
 
             # Open
             self.outf = init_csv(self.cfg, cfgsect, ','.join(header))
@@ -246,37 +253,64 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             self.vy = fm_omg_dot[1, 1]
             self.mvz = fm_omg_dot[1, 2]
             self.mz = self.mpz + self.mvz
+            self.x = self.px + self.vx
+            self.y = self.py + self.vy
             self.omega_dot_rad = -self.mz / self.I_yy
             self.omega_dot_deg = self.omega_dot_rad * (180 / np.pi)
+            self.global_X = self.x*np.cos(np.radians(self.theta_deg)) + self.y*np.sin(np.radians(self.theta_deg))
+            self.global_Y = -self.x*np.sin(np.radians(self.theta_deg)) + self.y*np.cos(np.radians(self.theta_deg))
+            self.global_U_dot = self.global_X / self.mass
+            self.global_V_dot = self.global_Y / self.mass
 
         if self.scheme == 'euler':
             # Euler Method
             self.omega_next = self.omega_deg + self.omega_dot_deg * self.dt
-            self.alpha_next = self.alpha_deg + self.omega_deg * self.dt
+            self.theta_next = self.theta_deg + self.omega_deg * self.dt
             self.omega_deg = self.omega_next
-            self.alpha_deg = self.alpha_next
+            self.theta_deg = self.theta_next
+            if self.dof >= 2:
+                self.global_V = self.global_V + self.global_V_dot * self.dt
+            if self.dof == 3:
+                self.global_U = self.global_U - self.global_U_dot * self.dt
+
         elif self.scheme == 'heun':
             # Trapezoidal Method
             self.omega_next = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
-            self.alpha_next = self.alpha_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
+            self.theta_next = self.theta_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
             self.prev_omega_dot = self.omega_dot_deg
             self.prev_omega = self.omega_deg
             self.omega_deg = self.omega_next
-            self.alpha_deg = self.alpha_next
+            self.theta_deg = self.theta_next
+            if self.dof >= 2:
+                self.global_V = self.global_V + (self.dt / 2) * (self.global_V_dot + self.prev_V_dot)
+                self.prev_V_dot = self.global_V_dot
+            if self.dof == 3:
+                self.global_U = self.global_U - (self.dt / 2) * (self.global_U_dot + self.prev_U_dot)
+                self.prev_U_dot = self.global_U_dot
+
         elif self.scheme == 'adams-bashforth':
             # Adams-Bashforth 2nd-order
             self.omega_next = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
-            self.alpha_next = self.alpha_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
+            self.theta_next = self.theta_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
             self.prev_omega_dot = self.omega_dot_deg
             self.prev_omega = self.omega_deg
             self.omega_deg = self.omega_next
-            self.alpha_deg = self.alpha_next
+            self.theta_deg = self.theta_next
+            if self.dof >= 2:
+                self.global_V = self.global_V + (3 * self.global_V_dot - self.prev_V_dot) * self.dt / 2
+                self.prev_V_dot = self.global_V_dot
+            if self.dof == 3:
+                self.global_U = self.global_U - (3 * self.global_U_dot - self.prev_U_dot) * self.dt / 2
+                self.prev_U_dot = self.global_U_dot
 
         # Calculate velocities and omega_sqr
-        self.u = self.freestream * np.cos(np.radians(self.alpha_deg))
-        self.v = self.freestream * np.sin(np.radians(self.alpha_deg))
-        self.du = self.u - self.freestream_u
-        self.dv = self.v - self.freestream_v
+        self.global_Velocity = np.sqrt(self.global_U ** 2 + self.global_V ** 2)
+        self.gamma_deg = np.degrees(np.arctan2(self.global_V, self.global_U))
+        self.alpha_deg = self.theta_deg - self.gamma_deg
+        self.u = self.global_Velocity * np.cos(np.radians(self.alpha_deg))
+        self.v = self.global_Velocity * np.sin(np.radians(self.alpha_deg))
+        self.du = self.u - self.rotating_U
+        self.dv = self.v - self.rotating_V
         self.omega_rad = self.omega_deg * (np.pi / 180)
         self.omg_sqr_rad = self.omega_rad ** 2
         self.neg_omega_rad = -self.omega_rad
@@ -285,7 +319,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         if intg.nacptsteps % self.output_steps == 0:
             if rank == root:
                 # Write
-                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.alpha_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
+                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.global_U, self.global_V, self.global_U_dot, self.global_V_dot, self.alpha_deg, self.gamma_deg, self.theta_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
 
                 # Flush to disk
                 self.outf.flush()
