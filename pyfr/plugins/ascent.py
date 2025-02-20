@@ -94,11 +94,9 @@ class ConduitNode:
                 fn(self, key, value.ctypes.data, value.size)
             case list():
                 value = np.array(value, dtype=float)
-                self.lib.conduit_node_set_path_float64_ptr(self, key,
-                                                           value.ctypes.data,
-                                                           value.size)
+                self.lib.conduit_node_set_path_float64_ptr(self, key, value.ctypes.data, value.size)
             case _:
-                ValueError('ConduitNode: __setitem__ type not supported')
+                raise ValueError('ConduitNode: __setitem__ type not supported')
 
     def append(self):
         ptr = self.lib.conduit_node_append(self)
@@ -274,6 +272,8 @@ class _AscentRenderer:
         self.isrestart = isrestart
         self._image_paths = []
 
+        self._coords = {}
+        
         # Expressions to plot and configs
         self._exprs = []
         self._fields_write = set()
@@ -310,6 +310,10 @@ class _AscentRenderer:
 
         eidx = adapter.etypes.index(etype)
         soln_op, xd = adapter.soln_op_vpts(etype, divisor)
+
+        xd = xd[..., rgn].transpose(1, 2, 0)
+        self._coords[d_str] = xd
+
         self._ele_regions_lin.append((d_str, eidx, rgn, soln_op))
 
         mesh_n[f'{d_str}/state/domain_id'] = adapter.prank
@@ -322,9 +326,7 @@ class _AscentRenderer:
         mesh_n[f'{d_str}/topologies/mesh/coordset'] = 'coords'
         mesh_n[f'{d_str}/topologies/mesh/type'] = 'unstructured'
 
-        xd = xd[..., rgn].transpose(1, 2, 0)
         ndims, neles, nsvpts = xd.shape
-
         for l, x in zip('xyz', xd.reshape(ndims, -1)):
             mesh_n[f'{d_str}/coordsets/coords/values/{l}'] = x
 
@@ -491,12 +493,23 @@ class _AscentRenderer:
             csolns = soln_op @ csolns
 
             # Convert from conservative to primitive variables
-            psolns = elementscls.con_to_pri(csolns, adapter.scfg)
+            rho, E = csolns[0], csolns[-1]
+            vs = [rhov / rho for rhov in csolns[1:-1]]
+            gamma = adapter.scfg.getfloat('constants', 'gamma')
+            p = (gamma - 1) * (E - 0.5 * rho * sum(v * v for v in vs))
+            psolns = [rho, *vs, p]
 
             # Prepare the substitutions dictionary
             subs = dict(zip(pnames, psolns), t=adapter.tcurr)
 
-            # Prepare any required gradients
+            coords = self._coords[d_str]
+            if adapter.ndims >= 1:
+                subs['x'] = coords[0].T
+            if adapter.ndims >= 2:
+                subs['y'] = coords[1].T
+            if adapter.ndims >= 3:
+                subs['z'] = coords[2].T
+
             if self._gradpinfo:
                 grads = np.moveaxis(grad_soln[idx], 2, 0)[..., rgn]
 
