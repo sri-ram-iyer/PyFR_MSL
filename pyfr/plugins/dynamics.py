@@ -2,6 +2,8 @@ from collections import defaultdict
 
 import csv
 import numpy as np
+import re
+import math
 
 from pyfr.mpiutil import get_comm_rank_root, mpi
 from pyfr.plugins.base import BaseSolnPlugin, SurfaceMixin, init_csv
@@ -60,6 +62,19 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.prev_V_dot = 0.0
         self.omega_dot_rad = 0.0
         self.omega_dot_deg = 0.0
+
+        convars = intg.system.elementscls.convarmap[self.ndims]
+        self.src_exprs = ["0.0"] * len(convars)
+        self.ele_map_items = intg.system.ele_map.items()
+        ploc_in_src = False
+        soln_in_src = False
+
+        convars = intg.system.elementscls.convarmap[self.ndims]
+
+        for etype, eles in intg.system.ele_map.items():
+            eles.add_src_macro('pyfr.plugins.kernels.source', 'source',
+                               {'src_exprs': self.src_exprs}, ploc=ploc_in_src,
+                               soln=soln_in_src)
 
         # Moments
         mcomp = 3 if self.ndims == 3 else 1

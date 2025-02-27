@@ -29,8 +29,6 @@ class NaNVTUWriterPlugin(PostactionMixin, RegionMixin, BaseSolnPlugin):
         self.fields = intg.system.elementscls.convarmap[self.ndims]
         self.fpdtype = intg.backend.fpdtype
 
-        print("NaN VTU Sucessfully Initialized")
-
     def __call__(self, intg):
         # Only perform this check every nsteps
         if intg.nacptsteps % self.nsteps != 0:
@@ -55,8 +53,6 @@ class NaNVTUWriterPlugin(PostactionMixin, RegionMixin, BaseSolnPlugin):
         if not should_trigger:
             # No ranks exceed the threshold; do nothing
             return
-
-        print(f"Rank {rank}: NaN VTU Triggered (Total NaNs: {total_nan_global})")
 
         # All ranks execute the VTU writing logic
         # Create metadata
@@ -90,9 +86,7 @@ class NaNVTUWriterPlugin(PostactionMixin, RegionMixin, BaseSolnPlugin):
             data[etype] = intg.soln[idx][..., rgn].astype(self.fpdtype)
 
         # Write out the VTU file
-        print(f"Rank {rank}: Writing VTU File")
         solnfname = self._writer.write(data, intg.tcurr, metadata)
-        print(f"Rank {rank}: VTU File Written ({solnfname})")
 
         # Optionally, run any post-actions (such as notifying external processes)
         self._invoke_postaction(intg=intg, mesh=intg.system.mesh.fname,

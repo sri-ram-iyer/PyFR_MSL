@@ -3,7 +3,7 @@
 <% gmo = c['gamma'] - 1.0 %>
 <% gamma = c['gamma'] %>
 
-<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v, omg_sqr'>
+<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v, omg_sqr, neg_omg'>
     fpdtype_t u_val = u;
     fpdtype_t v_val = v;
     fpdtype_t cs = sqrt(${gamma}*${c['p']}/${c['rho']});
@@ -11,8 +11,14 @@
     fpdtype_t ratio = cs*${2.0/gmo};
 
     fpdtype_t inv = 1.0/ul[0];
-    fpdtype_t V_e = ${' + '.join('({0} + {1})*nl[{2}]'.format(c['uvw'[i]], 'u_val' if i == 0 else 'v_val', i)
-                                 for i in range(ndims))};
+    fpdtype_t V_e = ${' + '.join(
+        '(({0}{1}) + {2})*nl[{3}]'.format(
+            c['uvw'[i]],
+            ' + neg_omg*ploc[1]' if i == 0 else (' - neg_omg*ploc[0]' if i == 1 else ''),
+            'u_val' if i == 0 else 'v_val',
+            i)
+        for i in range(ndims)
+    )};
     fpdtype_t V_i = inv*(${' + '.join('ul[{1}]*nl[{0}]'.format(i, i + 1)
                                       for i in range(ndims))});
     fpdtype_t p_i = ${gmo}*ul[${nvars - 1}]
@@ -36,7 +42,7 @@
 % for i in range(ndims):
     ur[${i + 1}] = (V_i >= 0)
                  ? rho_b*(ul[${i + 1}]*inv + (V_b - V_i)*nl[${i}])
-                 : rho_b*(${c['uvw'[i]]} + ${'u_val' if i == 0 else 'v_val'} + (V_b - V_e)*nl[${i}]);
+                 : rho_b*(${c['uvw'[i]]}${' + neg_omg*ploc[1]' if i == 0 else (' - neg_omg*ploc[0]' if i == 1 else '')} + ${'u_val' if i == 0 else 'v_val'} + (V_b - V_e)*nl[${i}]);
 % endfor
     ur[${nvars - 1}] = p_b*${1.0/gmo}
                      + 0.5*(1.0/ur[0])*${pyfr.dot('ur[{i}]', i=(1, ndims + 1))}
