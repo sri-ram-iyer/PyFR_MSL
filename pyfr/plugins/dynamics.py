@@ -329,6 +329,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.omega_rad = self.omega_deg * (np.pi / 180)
         self.omg_sqr_rad = self.omega_rad ** 2
         self.neg_omega_rad = -self.omega_rad
+        self.neg_omega_dot_rad = -self.omega_dot_rad
 
         # Reduce and output if we're the root rank
         if intg.nacptsteps % self.output_steps == 0:
@@ -345,7 +346,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             intg.system.v = float(comm.bcast(self.dv, root=root))
             intg.system.omg_sqr = float(comm.bcast(self.omg_sqr_rad, root=root))
             intg.system.neg_omg = float(comm.bcast(self.neg_omega_rad, root=root))
-            intg.system.omega_dot = float(comm.bcast(self.omega_dot_rad, root=root))
+            intg.system.omega_dot = float(comm.bcast(self.neg_omega_dot_rad, root=root))
         else:
             intg.system.u = float(comm.bcast(None, root=root))
             intg.system.v = float(comm.bcast(None, root=root))

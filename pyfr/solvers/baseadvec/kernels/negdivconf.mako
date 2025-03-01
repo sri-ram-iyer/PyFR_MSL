@@ -21,5 +21,4 @@ fpdtype_t src[${nvars}] = {};
 
 tdivtconf[1] += src[0]*src[0]*u[0]*ploc[0] + 2*src[0]*u[2] + u[0]*src[1]*ploc[1];
 tdivtconf[2] += src[0]*src[0]*u[0]*ploc[1] - 2*src[0]*u[1] - u[0]*src[1]*ploc[0];
-tdivtconf[${nvars-1}] += ${2*(mu*gamma/Pr)}*src[0]*src[0];
 </%pyfr:kernel>
