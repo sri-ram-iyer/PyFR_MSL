@@ -19,6 +19,6 @@ fpdtype_t src[${nvars}] = {};
     tdivtconf[${i}] = -rcpdjac*tdivtconf[${i}];
 % endfor
 
-tdivtconf[1] += src[0]*src[0]*u[0]*ploc[0] + 2*src[0]*u[2] + u[0]*src[1]*ploc[1];
-tdivtconf[2] += src[0]*src[0]*u[0]*ploc[1] - 2*src[0]*u[1] - u[0]*src[1]*ploc[0];
+tdivtconf[1] += src[0]*src[0]*u[0]*ploc[0] + 2*src[0]*u[2] + u[0]*src[1]*ploc[1] - u[0]*src[2];
+tdivtconf[2] += src[0]*src[0]*u[0]*ploc[1] - 2*src[0]*u[1] - u[0]*src[1]*ploc[0] - u[0]*src[3];
 </%pyfr:kernel>

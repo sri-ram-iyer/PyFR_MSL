@@ -3,7 +3,7 @@
 <% gmo = c['gamma'] - 1.0 %>
 <% gamma = c['gamma'] %>
 
-<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v, omg_sqr, neg_omg'>
+<%pyfr:macro name='bc_rsolve_state' params='ul, nl, ur, rote' externs='ploc, t, u, v, omg_sqr, neg_omg, global_U, global_V'>
     fpdtype_t u_val = u;
     fpdtype_t v_val = v;
     fpdtype_t cs = sqrt(${gamma}*${c['p']}/${c['rho']});

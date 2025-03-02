@@ -54,17 +54,23 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.omega_rad = self.cfg.getfloat(cfgsect, 'omega_initial')
         self.global_U = self.rotating_freestream
         self.global_V = 0.0
+        self.prev_global_U = self.rotating_freestream
+        self.prev_global_V = 0.0
+        self.global_x_pos = 0.0
+        self.global_y_pos = 0.0
         self.global_Velocity = self.rotating_freestream
         self.omega_deg = self.omega_rad * (180 / np.pi)
         self.prev_omega_dot = 0.0
         self.prev_omega = 0.0
+        self.global_U_dot = 0.0
+        self.global_V_dot = 0.0
         self.prev_U_dot = 0.0
         self.prev_V_dot = 0.0
         self.omega_dot_rad = 0.0
         self.omega_dot_deg = 0.0
 
         convars = intg.system.elementscls.convarmap[self.ndims]
-        self.src_exprs = ["0.0"] * len(convars)
+        self.src_exprs = ["0.0"] * 4
         self.ele_map_items = intg.system.ele_map.items()
         ploc_in_src = False
         soln_in_src = False
@@ -103,7 +109,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
                 header += ['vx', 'vy', 'vz'][:self.ndims]
                 if self._mcomp:
                     header += ['mvx', 'mvy', 'mvz'][3 - mcomp:]
-            header += ['u', 'v', 'global_U', 'global_V', 'global_U_dot', 'global_V_dot', 'alpha', 'gamma', 'theta', 'omega', 'omega_dot']
+            header += ['global_X', 'global_Y', 'global_U', 'global_V', 'global_U_dot', 'global_V_dot', 'alpha', 'gamma', 'theta', 'omega', 'omega_dot']
 
             # Open
             self.outf = init_csv(self.cfg, cfgsect, ','.join(header))
@@ -268,55 +274,83 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             self.vy = fm_omg_dot[1, 1]
             self.mvz = fm_omg_dot[1, 2]
             self.mz = self.mpz + self.mvz
-            self.x = self.px + self.vx
-            self.y = self.py + self.vy
-            self.omega_dot_rad = -self.mz / self.I_yy
-            self.omega_dot_deg = self.omega_dot_rad * (180 / np.pi)
-            self.global_X = self.x*np.cos(np.radians(self.theta_deg)) + self.y*np.sin(np.radians(self.theta_deg))
-            self.global_Y = -self.x*np.sin(np.radians(self.theta_deg)) + self.y*np.cos(np.radians(self.theta_deg))
-            self.global_U_dot = self.global_X / self.mass
-            self.global_V_dot = self.global_Y / self.mass
+            self.rotating_x_force = self.px + self.vx
+            self.rotating_y_force = self.py + self.vy
+            self.global_x_force = self.rotating_x_force*np.cos(np.radians(self.theta_deg)) + self.rotating_y_force*np.sin(np.radians(self.theta_deg))
+            self.global_y_force = -self.rotating_x_force*np.sin(np.radians(self.theta_deg)) + self.rotating_y_force*np.cos(np.radians(self.theta_deg))
+            if self.dof >= 1:
+                self.omega_dot_rad = -self.mz / self.I_yy
+                self.omega_dot_deg = self.omega_dot_rad * (180 / np.pi)
+            if self.dof >= 2:
+                self.global_V_dot = self.global_y_force / self.mass
+            if self.dof == 3:
+                self.global_U_dot = -self.global_x_force / self.mass
 
         if self.scheme == 'euler':
             # Euler Method
-            self.omega_next = self.omega_deg + self.omega_dot_deg * self.dt
-            self.theta_next = self.theta_deg + self.omega_deg * self.dt
-            self.omega_deg = self.omega_next
-            self.theta_deg = self.theta_next
+            if self.dof >= 1:
+                self.omega_next = self.omega_deg + self.omega_dot_deg * self.dt
+                self.theta_next = self.theta_deg + self.omega_deg * self.dt
+                self.omega_deg = self.omega_next
+                self.theta_deg = self.theta_next
             if self.dof >= 2:
-                self.global_V = self.global_V + self.global_V_dot * self.dt
+                self.global_V_next = self.global_V + self.global_V_dot * self.dt
+                self.global_y_pos_next = self.global_y_pos + self.global_V * self.dt
+                self.global_V = self.global_V_next
+                self.global_y_pos = self.global_y_pos_next
             if self.dof == 3:
-                self.global_U = self.global_U - self.global_U_dot * self.dt
+                self.global_U_next = self.global_U + self.global_U_dot * self.dt
+                self.global_x_pos_next = self.global_x_pos + self.global_U * self.dt
+                self.global_U = self.global_U_next
+                self.global_x_pos = self.global_x_pos_next
 
         elif self.scheme == 'heun':
             # Trapezoidal Method
-            self.omega_next = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
-            self.theta_next = self.theta_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
-            self.prev_omega_dot = self.omega_dot_deg
-            self.prev_omega = self.omega_deg
-            self.omega_deg = self.omega_next
-            self.theta_deg = self.theta_next
+            if self.dof >= 1:
+                self.omega_next = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
+                self.theta_next = self.theta_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
+                self.prev_omega_dot = self.omega_dot_deg
+                self.prev_omega = self.omega_deg
+                self.omega_deg = self.omega_next
+                self.theta_deg = self.theta_next
             if self.dof >= 2:
-                self.global_V = self.global_V + (self.dt / 2) * (self.global_V_dot + self.prev_V_dot)
+                self.global_V_next = self.global_V + (self.dt / 2) * (self.global_V_dot + self.prev_V_dot)
+                self.global_y_pos_next = self.global_y_pos + (self.dt / 2) * (self.global_V + self.prev_global_V)
                 self.prev_V_dot = self.global_V_dot
+                self.prev_global_V = self.global_V
+                self.global_V = self.global_V_next
+                self.global_y_pos = self.global_y_pos_next
             if self.dof == 3:
-                self.global_U = self.global_U - (self.dt / 2) * (self.global_U_dot + self.prev_U_dot)
+                self.global_U_next = self.global_U + (self.dt / 2) * (self.global_U_dot + self.prev_U_dot)
+                self.global_x_pos_next = self.global_x_pos + (self.dt / 2) * (self.global_U + self.prev_global_U)
                 self.prev_U_dot = self.global_U_dot
+                self.prev_global_U = self.global_U
+                self.global_U = self.global_U_next
+                self.global_x_pos = self.global_x_pos_next
 
         elif self.scheme == 'adams-bashforth':
             # Adams-Bashforth 2nd-order
-            self.omega_next = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
-            self.theta_next = self.theta_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
-            self.prev_omega_dot = self.omega_dot_deg
-            self.prev_omega = self.omega_deg
-            self.omega_deg = self.omega_next
-            self.theta_deg = self.theta_next
+            if self.dof >= 1:
+                self.omega_next = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
+                self.theta_next = self.theta_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
+                self.prev_omega_dot = self.omega_dot_deg
+                self.prev_omega = self.omega_deg
+                self.omega_deg = self.omega_next
+                self.theta_deg = self.theta_next
             if self.dof >= 2:
-                self.global_V = self.global_V + (3 * self.global_V_dot - self.prev_V_dot) * self.dt / 2
+                self.global_V_next = self.global_V + (3 * self.global_V_dot - self.prev_V_dot) * self.dt / 2
+                self.global_y_pos_next = self.global_y_pos + (3 * self.global_V - self.prev_global_V) * self.dt / 2
                 self.prev_V_dot = self.global_V_dot
+                self.prev_global_V = self.global_V
+                self.global_V = self.global_V_next
+                self.global_y_pos = self.global_y_pos_next
             if self.dof == 3:
-                self.global_U = self.global_U - (3 * self.global_U_dot - self.prev_U_dot) * self.dt / 2
+                self.global_U_next = self.global_U + (3 * self.global_U_dot - self.prev_U_dot) * self.dt / 2
+                self.global_x_pos_next = self.global_x_pos + (3 * self.global_U - self.prev_global_U) * self.dt / 2
                 self.prev_U_dot = self.global_U_dot
+                self.prev_global_U = self.global_U
+                self.global_U = self.global_U_next
+                self.global_x_pos = self.global_x_pos_next
 
         # Calculate velocities and omega_sqr
         self.global_Velocity = np.sqrt(self.global_U ** 2 + self.global_V ** 2)
@@ -335,7 +369,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         if intg.nacptsteps % self.output_steps == 0:
             if rank == root:
                 # Write
-                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.u, self.v, self.global_U, self.global_V, self.global_U_dot, self.global_V_dot, self.alpha_deg, self.gamma_deg, self.theta_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
+                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.global_x_pos, self.global_y_pos, self.global_U, self.global_V, self.global_U_dot, self.global_V_dot, self.alpha_deg, self.gamma_deg, self.theta_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
 
                 # Flush to disk
                 self.outf.flush()
@@ -347,12 +381,20 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             intg.system.omg_sqr = float(comm.bcast(self.omg_sqr_rad, root=root))
             intg.system.neg_omg = float(comm.bcast(self.neg_omega_rad, root=root))
             intg.system.omega_dot = float(comm.bcast(self.neg_omega_dot_rad, root=root))
+            intg.system.global_U = float(comm.bcast(self.global_U, root=root))
+            intg.system.global_V = float(comm.bcast(self.global_V, root=root))
+            intg.system.global_U_dot = float(comm.bcast(self.global_U_dot, root=root))
+            intg.system.global_V_dot = float(comm.bcast(self.global_V_dot, root=root))
         else:
             intg.system.u = float(comm.bcast(None, root=root))
             intg.system.v = float(comm.bcast(None, root=root))
             intg.system.omg_sqr = float(comm.bcast(None, root=root))
             intg.system.neg_omg = float(comm.bcast(None, root=root))
             intg.system.omega_dot = float(comm.bcast(None, root=root))
+            intg.system.global_U = float(comm.bcast(None, root=root))
+            intg.system.global_V = float(comm.bcast(None, root=root))
+            intg.system.global_U_dot = float(comm.bcast(None, root=root))
+            intg.system.global_V_dot = float(comm.bcast(None, root=root))
 
     def stress_tensor(self, u, du):
         c = self._constants

@@ -44,6 +44,10 @@ class BaseElements:
         self._set_external('omg_sqr', 'scalar fpdtype_t')
         self._set_external('neg_omg', 'scalar fpdtype_t')
         self._set_external('omega_dot', 'scalar fpdtype_t')
+        self._set_external('global_U', 'scalar fpdtype_t')
+        self._set_external('global_V', 'scalar fpdtype_t')
+        self._set_external('global_U_dot', 'scalar fpdtype_t')
+        self._set_external('global_V_dot', 'scalar fpdtype_t')
         self._set_external('t', 'scalar fpdtype_t')
 
         # Check the dimensionality of the problem

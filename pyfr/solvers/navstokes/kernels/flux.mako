@@ -1,7 +1,7 @@
 <%namespace module='pyfr.backends.base.makoutil' name='pyfr'/>
 
 % if ndims == 2:
-<%pyfr:macro name='viscous_flux_add' params='uin, grad_uin, fout, rote' externs='t, omg_sqr'>
+<%pyfr:macro name='viscous_flux_add' params='uin, grad_uin, fout, rote' externs='t, omg_sqr, global_U, global_V'>
     fpdtype_t rho = uin[0], rhou = uin[1], rhov = uin[2], E = uin[3];
 
     fpdtype_t rcprho = 1.0/rho;
@@ -45,7 +45,7 @@
     fout[1][3] += u*t_xy + v*t_yy + -mu_c*${c['gamma']/c['Pr']}*T_y;
 </%pyfr:macro>
 % elif ndims == 3:
-<%pyfr:macro name='viscous_flux_add' params='uin, grad_uin, fout, rote' externs='t, omg_sqr'>
+<%pyfr:macro name='viscous_flux_add' params='uin, grad_uin, fout, rote' externs='t, omg_sqr, global_U, global_V'>
     fpdtype_t rho  = uin[0];
     fpdtype_t rhou = uin[1], rhov = uin[2], rhow = uin[3];
     fpdtype_t E    = uin[4];
