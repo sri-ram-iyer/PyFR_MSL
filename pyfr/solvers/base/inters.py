@@ -45,10 +45,10 @@ class BaseInters:
         self._set_external('omega_dot', 'scalar fpdtype_t')
         self._set_external('global_U', 'scalar fpdtype_t')
         self._set_external('global_V', 'scalar fpdtype_t')
-        self._set_external('global_U_dot', 'scalar fpdtype_t')
-        self._set_external('global_V_dot', 'scalar fpdtype_t')
+        self._set_external('rotating_U_dot', 'scalar fpdtype_t')
+        self._set_external('rotating_V_dot', 'scalar fpdtype_t')
 
-    def prepare(self, t, u=None, v=None, omg_sqr=None, neg_omg=None, omega_dot=None, global_U=None, global_V=None, global_U_dot=None, global_V_dot=None):
+    def prepare(self, t, u=None, v=None, omg_sqr=None, neg_omg=None, omega_dot=None, global_U=None, global_V=None, rotating_U_dot=None, rotating_V_dot=None):
         if u is not None:
             self._set_external('u', 'scalar fpdtype_t', u)
         if v is not None:
@@ -63,10 +63,10 @@ class BaseInters:
             self._set_external('global_U', 'scalar fpdtype_t', global_U)
         if global_V is not None:
             self._set_external('global_V', 'scalar fpdtype_t', global_V)
-        if global_U_dot is not None:
-            self._set_external('global_U_dot', 'scalar fpdtype_t', global_U_dot)
-        if global_V_dot is not None:
-            self._set_external('global_V_dot', 'scalar fpdtype_t', global_V_dot)
+        if rotating_U_dot is not None:
+            self._set_external('rotating_U_dot', 'scalar fpdtype_t', rotating_U_dot)
+        if rotating_V_dot is not None:
+            self._set_external('rotating_V_dot', 'scalar fpdtype_t', rotating_V_dot)
 
     def _set_external(self, name, spec, value=None):
         self._external_args[name] = spec

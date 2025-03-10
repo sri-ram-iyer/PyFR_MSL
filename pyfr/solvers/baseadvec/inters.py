@@ -135,8 +135,8 @@ class BaseAdvectionBCInters(BaseInters):
         self._set_external('v', 'scalar fpdtype_t')
         self._set_external('global_U', 'scalar fpdtype_t')
         self._set_external('global_V', 'scalar fpdtype_t')
-        self._set_external('global_U_dot', 'scalar fpdtype_t')
-        self._set_external('global_V_dot', 'scalar fpdtype_t')
+        self._set_external('rotating_U_dot', 'scalar fpdtype_t')
+        self._set_external('rotating_V_dot', 'scalar fpdtype_t')
 
         if cfg.get('solver', 'shock-capturing') == 'entropy-filter':
             self._entmin_lhs = self._view(lhs, 'get_entmin_bc_fpts_for_inter')

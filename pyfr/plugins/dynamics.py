@@ -51,7 +51,7 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.rotating_V = self.cfg.getfloat(cfgsect, 'rotating_V')
         self.rotating_freestream = np.sqrt(self.rotating_U ** 2 + self.rotating_V ** 2)
         self.theta_deg = np.degrees(np.arctan2(self.rotating_V, self.rotating_U))
-        self.omega_rad = self.cfg.getfloat(cfgsect, 'omega_initial')
+        self.omega_rad = 0.0
         self.global_U = self.rotating_freestream
         self.global_V = 0.0
         self.prev_global_U = self.rotating_freestream
@@ -364,6 +364,8 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         self.omg_sqr_rad = self.omega_rad ** 2
         self.neg_omega_rad = -self.omega_rad
         self.neg_omega_dot_rad = -self.omega_dot_rad
+        self.rotating_U_dot = self.global_U_dot*np.cos(np.radians(self.theta_deg)) + self.global_V_dot*np.sin(np.radians(self.theta_deg))
+        self.rotating_V_dot = -self.global_U_dot*np.sin(np.radians(self.theta_deg)) + self.global_V_dot*np.cos(np.radians(self.theta_deg))
 
         # Reduce and output if we're the root rank
         if intg.nacptsteps % self.output_steps == 0:
@@ -383,8 +385,8 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             intg.system.omega_dot = float(comm.bcast(self.neg_omega_dot_rad, root=root))
             intg.system.global_U = float(comm.bcast(self.global_U, root=root))
             intg.system.global_V = float(comm.bcast(self.global_V, root=root))
-            intg.system.global_U_dot = float(comm.bcast(self.global_U_dot, root=root))
-            intg.system.global_V_dot = float(comm.bcast(self.global_V_dot, root=root))
+            intg.system.rotating_U_dot = float(comm.bcast(self.rotating_U_dot, root=root))
+            intg.system.rotating_V_dot = float(comm.bcast(self.rotating_V_dot, root=root))
         else:
             intg.system.u = float(comm.bcast(None, root=root))
             intg.system.v = float(comm.bcast(None, root=root))
@@ -393,8 +395,8 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             intg.system.omega_dot = float(comm.bcast(None, root=root))
             intg.system.global_U = float(comm.bcast(None, root=root))
             intg.system.global_V = float(comm.bcast(None, root=root))
-            intg.system.global_U_dot = float(comm.bcast(None, root=root))
-            intg.system.global_V_dot = float(comm.bcast(None, root=root))
+            intg.system.rotating_U_dot = float(comm.bcast(None, root=root))
+            intg.system.rotating_V_dot = float(comm.bcast(None, root=root))
 
     def stress_tensor(self, u, du):
         c = self._constants

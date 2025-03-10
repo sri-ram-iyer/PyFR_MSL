@@ -293,13 +293,13 @@ class BaseSystem:
         omega_dot = getattr(self, 'omega_dot', 0)
         global_U = getattr(self, 'global_U', 0)
         global_V = getattr(self, 'global_V', 0)
-        global_U_dot = getattr(self, 'global_U_dot', 0)
-        global_V_dot = getattr(self, 'global_V_dot', 0)
+        rotating_U_dot = getattr(self, 'rotating_U_dot', 0)
+        rotating_V_dot = getattr(self, 'rotating_V_dot', 0)
         for b in self._bc_inters:
-            b.prepare(t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot, global_U=global_U, global_V=global_V, global_U_dot=global_U_dot, global_V_dot=global_V_dot)
+            b.prepare(t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot, global_U=global_U, global_V=global_V, rotating_U_dot=rotating_U_dot, rotating_V_dot=rotating_V_dot)
 
         for b in binders:
-            b(t=t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot, global_U=global_U, global_V=global_V, global_U_dot=global_U_dot, global_V_dot=global_V_dot)
+            b(t=t, u=u, v=v, omg_sqr=omg_sqr, neg_omg=neg_omg, omega_dot=omega_dot, global_U=global_U, global_V=global_V, rotating_U_dot=rotating_U_dot, rotating_V_dot=rotating_V_dot)
 
     def _rhs_graphs(self, uinbank, foutbank):
         pass
