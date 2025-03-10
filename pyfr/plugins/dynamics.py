@@ -289,68 +289,52 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         if self.scheme == 'euler':
             # Euler Method
             if self.dof >= 1:
-                self.omega_next = self.omega_deg + self.omega_dot_deg * self.dt
-                self.theta_next = self.theta_deg + self.omega_deg * self.dt
-                self.omega_deg = self.omega_next
-                self.theta_deg = self.theta_next
+                self.omega_deg = self.omega_deg + self.omega_dot_deg * self.dt
+                self.theta_deg = self.theta_deg + self.omega_deg * self.dt
             if self.dof >= 2:
-                self.global_V_next = self.global_V + self.global_V_dot * self.dt
-                self.global_y_pos_next = self.global_y_pos + self.global_V * self.dt
-                self.global_V = self.global_V_next
-                self.global_y_pos = self.global_y_pos_next
+                self.global_V = self.global_V + self.global_V_dot * self.dt
+                self.global_y_pos = self.global_y_pos + self.global_V * self.dt
             if self.dof == 3:
-                self.global_U_next = self.global_U + self.global_U_dot * self.dt
-                self.global_x_pos_next = self.global_x_pos + self.global_U * self.dt
-                self.global_U = self.global_U_next
-                self.global_x_pos = self.global_x_pos_next
+                self.global_U = self.global_U + self.global_U_dot * self.dt
+            self.global_x_pos = self.global_x_pos + self.global_U * self.dt
 
         elif self.scheme == 'heun':
             # Trapezoidal Method
             if self.dof >= 1:
-                self.omega_next = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
-                self.theta_next = self.theta_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
+                self.omega_deg = self.omega_deg + (self.dt / 2) * (self.omega_dot_deg + self.prev_omega_dot)
+                self.theta_deg = self.theta_deg + (self.dt / 2) * (self.omega_deg + self.prev_omega)
                 self.prev_omega_dot = self.omega_dot_deg
                 self.prev_omega = self.omega_deg
-                self.omega_deg = self.omega_next
-                self.theta_deg = self.theta_next
             if self.dof >= 2:
-                self.global_V_next = self.global_V + (self.dt / 2) * (self.global_V_dot + self.prev_V_dot)
-                self.global_y_pos_next = self.global_y_pos + (self.dt / 2) * (self.global_V + self.prev_global_V)
+                self.global_V = self.global_V + (self.dt / 2) * (self.global_V_dot + self.prev_V_dot)
+                self.global_y_pos = self.global_y_pos + (self.dt / 2) * (self.global_V + self.prev_global_V)
                 self.prev_V_dot = self.global_V_dot
                 self.prev_global_V = self.global_V
-                self.global_V = self.global_V_next
-                self.global_y_pos = self.global_y_pos_next
             if self.dof == 3:
-                self.global_U_next = self.global_U + (self.dt / 2) * (self.global_U_dot + self.prev_U_dot)
-                self.global_x_pos_next = self.global_x_pos + (self.dt / 2) * (self.global_U + self.prev_global_U)
+                self.global_U = self.global_U + (self.dt / 2) * (self.global_U_dot + self.prev_U_dot)
+            self.global_x_pos = self.global_x_pos + (self.dt / 2) * (self.global_U + self.prev_global_U)
+            if self.dof == 3:
                 self.prev_U_dot = self.global_U_dot
                 self.prev_global_U = self.global_U
-                self.global_U = self.global_U_next
-                self.global_x_pos = self.global_x_pos_next
 
         elif self.scheme == 'adams-bashforth':
             # Adams-Bashforth 2nd-order
             if self.dof >= 1:
-                self.omega_next = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
-                self.theta_next = self.theta_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
+                self.omega = self.omega_deg + (3 * self.omega_dot_deg - self.prev_omega_dot) * self.dt / 2
+                self.theta = self.theta_deg + (3 * self.omega_deg - self.prev_omega) * self.dt / 2
                 self.prev_omega_dot = self.omega_dot_deg
                 self.prev_omega = self.omega_deg
-                self.omega_deg = self.omega_next
-                self.theta_deg = self.theta_next
             if self.dof >= 2:
-                self.global_V_next = self.global_V + (3 * self.global_V_dot - self.prev_V_dot) * self.dt / 2
-                self.global_y_pos_next = self.global_y_pos + (3 * self.global_V - self.prev_global_V) * self.dt / 2
+                self.global_V = self.global_V + (3 * self.global_V_dot - self.prev_V_dot) * self.dt / 2
+                self.global_y_pos = self.global_y_pos + (3 * self.global_V - self.prev_global_V) * self.dt / 2
                 self.prev_V_dot = self.global_V_dot
                 self.prev_global_V = self.global_V
-                self.global_V = self.global_V_next
-                self.global_y_pos = self.global_y_pos_next
             if self.dof == 3:
-                self.global_U_next = self.global_U + (3 * self.global_U_dot - self.prev_U_dot) * self.dt / 2
-                self.global_x_pos_next = self.global_x_pos + (3 * self.global_U - self.prev_global_U) * self.dt / 2
+                self.global_U = self.global_U + (3 * self.global_U_dot - self.prev_U_dot) * self.dt / 2
+            self.global_x_pos = self.global_x_pos + (3 * self.global_U - self.prev_global_U) * self.dt / 2
+            if self.dof == 3:
                 self.prev_U_dot = self.global_U_dot
                 self.prev_global_U = self.global_U
-                self.global_U = self.global_U_next
-                self.global_x_pos = self.global_x_pos_next
 
         # Calculate velocities and omega_sqr
         self.global_Velocity = np.sqrt(self.global_U ** 2 + self.global_V ** 2)
