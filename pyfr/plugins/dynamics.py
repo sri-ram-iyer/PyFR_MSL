@@ -270,9 +270,14 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             self.px = fm_omg_dot[0, 0]
             self.py = fm_omg_dot[0, 1]
             self.mpz = fm_omg_dot[0, 2]
-            self.vx = fm_omg_dot[1, 0]
-            self.vy = fm_omg_dot[1, 1]
-            self.mvz = fm_omg_dot[1, 2]
+            if self._viscous:
+                self.vx = fm_omg_dot[1, 0]
+                self.vy = fm_omg_dot[1, 1]
+                self.mvz = fm_omg_dot[1, 2]
+            else:
+                self.vx = 0.0
+                self.vy = 0.0
+                self.mvz = 0.0
             self.mz = self.mpz + self.mvz
             self.rotating_x_force = self.px + self.vx
             self.rotating_y_force = self.py + self.vy
@@ -354,10 +359,24 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         # Reduce and output if we're the root rank
         if intg.nacptsteps % self.output_steps == 0:
             if rank == root:
-                # Write
-                print(intg.tcurr, self.px, self.py, self.mpz, self.vx, self.vy, self.mvz, self.global_x_pos, self.global_y_pos, self.global_U, self.global_V, self.global_U_dot, self.global_V_dot, self.alpha_deg, self.gamma_deg, self.theta_deg, self.omega_deg, self.omega_dot_deg, sep=',', file=self.outf)
+                if self._viscous:
+                    print(intg.tcurr, self.px, self.py, self.mpz,
+                        self.vx, self.vy, self.mvz,
+                        self.global_x_pos, self.global_y_pos,
+                        self.global_U, self.global_V,
+                        self.global_U_dot, self.global_V_dot,
+                        self.alpha_deg, self.gamma_deg, self.theta_deg,
+                        self.omega_deg, self.omega_dot_deg,
+                        sep=',', file=self.outf)
+                else:
+                    print(intg.tcurr, self.px, self.py, self.mpz,
+                        self.global_x_pos, self.global_y_pos,
+                        self.global_U, self.global_V,
+                        self.global_U_dot, self.global_V_dot,
+                        self.alpha_deg, self.gamma_deg, self.theta_deg,
+                        self.omega_deg, self.omega_dot_deg,
+                        sep=',', file=self.outf)
 
-                # Flush to disk
                 self.outf.flush()
 
         # Broadcast to solver
