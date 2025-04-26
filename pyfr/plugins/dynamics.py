@@ -267,17 +267,41 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
             # Calculate omega_dot
             fm_omg_dot = np.zeros_like(fm)
             comm.Allreduce(fm, fm_omg_dot, op=mpi.SUM)
-            self.px = fm_omg_dot[0, 0]
-            self.py = fm_omg_dot[0, 1]
-            self.mpz = fm_omg_dot[0, 2]
-            if self._viscous:
-                self.vx = fm_omg_dot[1, 0]
-                self.vy = fm_omg_dot[1, 1]
-                self.mvz = fm_omg_dot[1, 2]
-            else:
-                self.vx = 0.0
-                self.vy = 0.0
-                self.mvz = 0.0
+
+            if self.ndims == 2:
+                self.px = fm_omg_dot[0, 0]
+                self.py = fm_omg_dot[0, 1]
+                self.mpz = fm_omg_dot[0, 2]
+                if self._viscous:
+                    self.vx = fm_omg_dot[1, 0]
+                    self.vy = fm_omg_dot[1, 1]
+                    self.mvz = fm_omg_dot[1, 2]
+                else:
+                    self.vx = 0.0
+                    self.vy = 0.0
+                    self.mvz = 0.0
+            if self.ndims == 3:
+                self.px = fm_omg_dot[0, 0]
+                self.py = fm_omg_dot[0, 1]
+                self.pz = fm_omg_dot[0, 2]
+                self.mpx = fm_omg_dot[0, 3]
+                self.mpy = fm_omg_dot[0, 4]
+                self.mpz = fm_omg_dot[0, 5]
+                if self._viscous:
+                    self.vx = fm_omg_dot[1, 0]
+                    self.vy = fm_omg_dot[1, 1]
+                    self.vz = fm_omg_dot[1, 2]
+                    self.mvx = fm_omg_dot[1, 3]
+                    self.mvy = fm_omg_dot[1, 4]
+                    self.mvz = fm_omg_dot[1, 5]
+                else:
+                    self.vx = 0.0
+                    self.vy = 0.0
+                    self.vz = 0.0
+                    self.mvx = 0.0
+                    self.mvy = 0.0
+                    self.mvz = 0.0
+
             self.mz = self.mpz + self.mvz
             self.rotating_x_force = self.px + self.vx
             self.rotating_y_force = self.py + self.vy
@@ -359,23 +383,46 @@ class DynamicsPlugin(SurfaceMixin, BaseSolnPlugin):
         # Reduce and output if we're the root rank
         if intg.nacptsteps % self.output_steps == 0:
             if rank == root:
-                if self._viscous:
-                    print(intg.tcurr, self.px, self.py, self.mpz,
-                        self.vx, self.vy, self.mvz,
-                        self.global_x_pos, self.global_y_pos,
-                        self.global_U, self.global_V,
-                        self.global_U_dot, self.global_V_dot,
-                        self.alpha_deg, self.gamma_deg, self.theta_deg,
-                        self.omega_deg, self.omega_dot_deg,
-                        sep=',', file=self.outf)
-                else:
-                    print(intg.tcurr, self.px, self.py, self.mpz,
-                        self.global_x_pos, self.global_y_pos,
-                        self.global_U, self.global_V,
-                        self.global_U_dot, self.global_V_dot,
-                        self.alpha_deg, self.gamma_deg, self.theta_deg,
-                        self.omega_deg, self.omega_dot_deg,
-                        sep=',', file=self.outf)
+                if self.ndims == 2:
+                    if self._viscous:
+                        print(intg.tcurr, self.px, self.py, self.mpz,
+                            self.vx, self.vy, self.mvz,
+                            self.global_x_pos, self.global_y_pos,
+                            self.global_U, self.global_V,
+                            self.global_U_dot, self.global_V_dot,
+                            self.alpha_deg, self.gamma_deg, self.theta_deg,
+                            self.omega_deg, self.omega_dot_deg,
+                            sep=',', file=self.outf)
+                    else:
+                        print(intg.tcurr, self.px, self.py, self.mpz,
+                            self.global_x_pos, self.global_y_pos,
+                            self.global_U, self.global_V,
+                            self.global_U_dot, self.global_V_dot,
+                            self.alpha_deg, self.gamma_deg, self.theta_deg,
+                            self.omega_deg, self.omega_dot_deg,
+                            sep=',', file=self.outf)
+
+                if self.ndims == 3:
+                    if self._viscous:
+                        print(intg.tcurr, self.px, self.py, self.pz,
+                            self.mpx, self.mpy, self.mpz,
+                            self.vx, self.vy, self.vz,
+                            self.mvx, self.mvy, self.mvz,
+                            self.global_x_pos, self.global_y_pos,
+                            self.global_U, self.global_V,
+                            self.global_U_dot, self.global_V_dot,
+                            self.alpha_deg, self.gamma_deg, self.theta_deg,
+                            self.omega_deg, self.omega_dot_deg,
+                            sep=',', file=self.outf)
+                    else:
+                        print(intg.tcurr, self.px, self.py, self.pz,
+                            self.mpx, self.mpy, self.mpz,
+                            self.global_x_pos, self.global_y_pos,
+                            self.global_U, self.global_V,
+                            self.global_U_dot, self.global_V_dot,
+                            self.alpha_deg, self.gamma_deg, self.theta_deg,
+                            self.omega_deg, self.omega_dot_deg,
+                            sep=',', file=self.outf)
 
                 self.outf.flush()
 
